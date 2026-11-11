@@ -31,7 +31,7 @@ def fetch_customers(client: Client) -> list[dict[str, Any]]:
 def fetch_products(client: Client) -> list[dict[str, Any]]:
     response = (
         client.table("products")
-        .select("product_id, product_name, price")
+        .select("product_id, product_name, category, price")
         .order("product_id")
         .execute()
     )

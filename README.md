@@ -16,7 +16,7 @@ cp .env.example .env
 Set `SUPABASE_URL` and `SUPABASE_KEY` in `.env`, then run:
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run app.py
 ```
 
 Never commit `.env` or paste a Supabase key into source code. The key previously
@@ -28,7 +28,7 @@ shared for this class project should be rotated before deployment.
 2. Sign in at [Streamlit Community Cloud](https://share.streamlit.io/) with the
    GitHub account that can access the repository.
 3. Create an app, choose `carolineherring-boop/class-20261028`, branch `main`,
-   and main file `streamlit_app.py`.
+   and main file `app.py`.
 4. In the app's settings, add these values under **Secrets** using TOML syntax:
 
    ```toml
