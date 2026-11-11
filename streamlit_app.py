@@ -5,8 +5,9 @@ from typing import Any
 
 import httpx
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 from postgrest.exceptions import APIError
-from supabase import Client
+from supabase import Client, create_client
 
 from order_entry import (
     create_order,
@@ -29,6 +30,16 @@ def _order_table_row(order: dict[str, Any]) -> dict[str, Any]:
         "Total": f"${unit_price * quantity:.2f}",
         "Order Date": order["order_date"],
     }
+
+
+def _create_app_client() -> Client:
+    try:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+    except (KeyError, StreamlitSecretNotFoundError):
+        return create_supabase_client()
+
+    return create_client(url, key)
 
 
 def _verify_pending_order(client: Client) -> None:
@@ -146,9 +157,12 @@ def main() -> None:
     st.caption("Customers, products, prices, and saved orders are read from Supabase.")
 
     try:
-        client = create_supabase_client()
-    except SystemExit as error:
-        st.error(str(error))
+        client = _create_app_client()
+    except SystemExit:
+        st.error(
+            "Supabase credentials are missing. Add SUPABASE_URL and "
+            "SUPABASE_KEY in Streamlit app Secrets, or use a local .env file."
+        )
         st.stop()
 
     if st.session_state.get("pending_order_id") is not None:
