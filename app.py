@@ -85,20 +85,37 @@ def _create_app_client() -> Client:
 # --------------------------------------------------------------------------
 # Data loading (cached in session state; cleared by Refresh Data / insert)
 # --------------------------------------------------------------------------
+def _describe_error(error: Exception) -> str:
+    """Return a short, credential-free explanation of a Supabase error."""
+    if isinstance(error, APIError):
+        parts = [error.message or "", f"(code {error.code})" if error.code else ""]
+        if error.hint:
+            parts.append(f"Hint: {error.hint}")
+        return " ".join(p for p in parts if p).strip() or "Unknown API error"
+    if isinstance(error, httpx.ConnectError):
+        return "Could not connect. Check that SUPABASE_URL is correct."
+    return type(error).__name__
+
+
 def _load_data(client: Client) -> bool:
-    try:
-        if "customers" not in st.session_state:
-            st.session_state["customers"] = fetch_customers(client)
-        if "products" not in st.session_state:
-            st.session_state["products"] = fetch_products(client)
-        if "order_history" not in st.session_state:
-            st.session_state["order_history"] = fetch_order_history(client)
-    except DB_ERRORS:
-        st.error(
-            "Could not load data from Supabase. Check the connection and "
-            "database permissions, then select Refresh Data."
-        )
-        return False
+    loaders = {
+        "customers": fetch_customers,
+        "products": fetch_products,
+        "order_history": fetch_order_history,
+    }
+    for key, loader in loaders.items():
+        if key in st.session_state:
+            continue
+        try:
+            st.session_state[key] = loader(client)
+        except DB_ERRORS as error:
+            table = "orders" if key == "order_history" else key
+            st.error(
+                f"Could not load the **{table}** table from Supabase: "
+                f"{_describe_error(error)}. Check the app secrets and the table, "
+                "then select Refresh Data."
+            )
+            return False
     return True
 
 
