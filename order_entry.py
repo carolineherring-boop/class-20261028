@@ -1,6 +1,7 @@
 """Display customers and products stored in the class Supabase project."""
 
 import os
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,39 @@ def fetch_products(client: Client) -> list[dict[str, Any]]:
         client.table("products")
         .select("product_id, product_name, category, price")
         .order("product_id")
+        .execute()
+    )
+    return response.data
+
+
+def fetch_customer(client: Client, customer_id: int) -> dict[str, Any] | None:
+    """Return one customer from Supabase, or None if it no longer exists."""
+    response = (
+        client.table("customers")
+        .select("customer_id, name")
+        .eq("customer_id", customer_id)
+        .execute()
+    )
+    return response.data[0] if response.data else None
+
+
+def fetch_product(client: Client, product_id: int) -> dict[str, Any] | None:
+    """Return one product with its current price, or None if it does not exist."""
+    response = (
+        client.table("products")
+        .select("product_id, product_name, category, price")
+        .eq("product_id", product_id)
+        .execute()
+    )
+    return response.data[0] if response.data else None
+
+
+def fetch_order_history(client: Client) -> list[dict[str, Any]]:
+    """Return saved orders, newest first."""
+    response = (
+        client.table("orders")
+        .select("order_id, customer_id, product_id, quantity, unit_price, order_date")
+        .order("order_id", desc=True)
         .execute()
     )
     return response.data
@@ -106,6 +140,7 @@ def create_order(
                 "product_id": product_id,
                 "quantity": quantity,
                 "unit_price": unit_price,
+                "order_date": date.today().isoformat(),
             }
         )
         .select("order_id")
